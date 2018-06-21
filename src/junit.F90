@@ -1,6 +1,8 @@
 module junit
 
   use xml2
+
+  implicit none
   
   private
 
@@ -68,6 +70,16 @@ module junit
       end if
     end subroutine set_real_with_default
 
+    function str(a)
+      character, dimension(:) :: a
+      character(len=size(a)) :: str
+
+      integer :: i
+      do i=1, size(a)
+         str(i:i) = a(i)
+      end do
+    end function str
+
     subroutine copy2chars(s, a)
       character (len=*), intent(in) :: s
       character, allocatable, intent(out) :: a(:)
@@ -94,17 +106,16 @@ module junit
 
     end function int2str_len
     
-    function int2cstr (i)
+    function int2str (i)
 
       !!< Convert integer i into a c string string.
 
       integer, intent(in) :: i
-      character(len=int2str_len(i)+1) :: int2cstr
+      character(len=int2str_len(i)+1) :: int2str
 
-      write(int2cstr,"(i0)") i
-      int2cstr=trim(int2cstr)//C_NULL_CHAR
+      write(int2str,"(i0)") i
 
-    end function int2cstr
+    end function int2str
 
     subroutine initialise_testsuite(suite, name)
 
@@ -192,33 +203,33 @@ module junit
     end subroutine free_testsuite
 
     subroutine write_testsuites_to_file(suites, filename)
-
       type(testsuite), dimension(:), intent(inout) :: suites
       character (len=*) :: filename
 
-      type(c_ptr) :: writer
-      integer (c_int) :: err
+      type(xmlTextWriter) :: writer
+
+      integer :: err
       integer :: i
       type(testcase), pointer :: tc
     
-      writer = xmlNewTextWriterFilename(c_wrap(trim(filename)), 0)
-      err = xmlTextWriterStartDocument(writer, c_wrap("1.0"),c_wrap("utf8"), c_wrap("no"))
-      err = xmlTextWriterStartElement(writer, c_wrap("testsuites"))
+      writer = xmlNewTextWriterFilename(filename, 0)
+      err = xmlTextWriterStartDocument(writer, "1.0","utf8", "no")
+      err = xmlTextWriterStartElement(writer, "testsuites")
 
       do i = 1, size(suites)
-         err = xmlTextWriterStartElement(writer, c_wrap("testsuite"))
-         err = xmlTextWriterWriteAttribute(writer, c_wrap("name"), c_wrap(suites(i)%name))
-         err = xmlTextWriterWriteAttribute(writer, c_wrap("tests"), int2cstr(suites(i)%tests))
+         err = xmlTextWriterStartElement(writer, "testsuite")
+         err = xmlTextWriterWriteAttribute(writer, "name", str(suites(i)%name))
+         err = xmlTextWriterWriteAttribute(writer, "tests", int2str(suites(i)%tests))
          tc => suites(i)%first
          do while (associated(tc))
-            err = xmlTextWriterStartElement(writer, c_wrap("testcase"))
-            err = xmlTextWriterWriteAttribute(writer, c_wrap("name"), c_wrap(tc%name))
+            err = xmlTextWriterStartElement(writer, "testcase")
+            err = xmlTextWriterWriteAttribute(writer, "name", str(tc%name))
             if (tc%failed) then
-               err = xmlTextWriterStartElement(writer, c_wrap("failure"))
+               err = xmlTextWriterStartElement(writer, "failure")
                if (allocated(tc%message)) &
-                    err = xmlTextWriterWriteAttribute(writer, c_wrap("message"), c_wrap(tc%message))
+                    err = xmlTextWriterWriteAttribute(writer, "message", str(tc%message))
                if (allocated(tc%type)) &
-                    err = xmlTextWriterWriteAttribute(writer, c_wrap("type"), c_wrap(tc%type))
+                    err = xmlTextWriterWriteAttribute(writer, "type", str(tc%type))
                err = xmlTextWriterEndElement(writer)
             end if
             err = xmlTextWriterEndElement(writer)
