@@ -81,6 +81,31 @@ module junit
       end do
     end subroutine copy2chars
 
+    pure function int2str_len(i)
+
+      !!< Count number of digits in i.
+
+      integer, intent(in) :: i
+      integer :: int2str_len 
+      
+      int2str_len = 1
+      if (i/=0) int2str_len = int2str_len + floor(log10(abs(real(i))))
+      if (i<0) int2str_len = int2str_len + 1
+
+    end function int2str_len
+    
+    function int2cstr (i)
+
+      !!< Convert integer i into a c string string.
+
+      integer, intent(in) :: i
+      character(len=int2str_len(i)+1) :: int2cstr
+
+      write(int2cstr,"(i0)") i
+      int2cstr=trim(int2cstr)//C_NULL_CHAR
+
+    end function int2cstr
+
     subroutine initialise_testsuite(suite, name)
 
       type(testsuite) :: suite
@@ -119,6 +144,7 @@ module junit
          suite%first => test
       end if
       suite%last => test
+      suite%tests = suite%tests +1
 
     end subroutine add_testcase
 
@@ -182,6 +208,7 @@ module junit
       do i = 1, size(suites)
          err = xmlTextWriterStartElement(writer, c_wrap("testsuite"))
          err = xmlTextWriterWriteAttribute(writer, c_wrap("name"), c_wrap(suites(i)%name))
+         err = xmlTextWriterWriteAttribute(writer, c_wrap("tests"), int2cstr(suites(i)%tests))
          tc => suites(i)%first
          do while (associated(tc))
             err = xmlTextWriterStartElement(writer, c_wrap("testcase"))

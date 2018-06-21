@@ -21,7 +21,10 @@ bin/%: tests/%.F90 lib/libfjunit.a
 	mkdir -p bin
 	${FC} ${FCFLAGS} -lxml2 -Llib -lfjunit $< -o $@
 
-tests: bin/test_xml2 bin/test_junit
+bin/validate_junit_xml:
+	cp tests/validate_junit_xml.py $@
+
+tests: bin/test_xml2 bin/test_junit bin/validate_junit_xml
 
 src/junit.o: src/xml2.o	
 
